@@ -1,1 +1,137 @@
+#define ENA 12
+#define ENB 12
+#define IN_1 2
+#define IN_2 14
+#define IN_3 15
+#define IN_4 13
+
+#include <WiFi.h>
+#include <WebServer.h>
+
+String command;
+int speedCar = 800;
+int speed_Coeff = 3;
+
+const char* ssid = "TECH-24-SNAG_HARDWARE";
+const char* password = "SPARTANS.LEGACY";
+
+WebServer server(80);
+
+void setup() {
+  pinMode(ENA, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  pinMode(IN_1, OUTPUT);
+  pinMode(IN_2, OUTPUT);
+  pinMode(IN_3, OUTPUT);
+  pinMode(IN_4, OUTPUT);
+
+  Serial.begin(115200);
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("Connected to WiFi");
+
+  // Set up web server routes
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/control", HTTP_GET, handleControl);
+
+  server.begin();
+  Serial.println("HTTP server started");
+}
+
+void loop() {
+  server.handleClient();
+}
+
+void goAhead() {
+  digitalWrite(IN_1, LOW);
+  digitalWrite(IN_2, HIGH);
+  analogWrite(ENA, speedCar);
+
+  digitalWrite(IN_3, LOW);
+  digitalWrite(IN_4, HIGH);
+  analogWrite(ENB, speedCar);
+}
+
+void goBack() {
+  digitalWrite(IN_1, HIGH);
+  digitalWrite(IN_2, LOW);
+  analogWrite(ENA, speedCar);
+
+  digitalWrite(IN_3, HIGH);
+  digitalWrite(IN_4, LOW);
+  analogWrite(ENB, speedCar);
+}
+
+void goRight() {
+  digitalWrite(IN_1, HIGH);
+  digitalWrite(IN_2, LOW);
+  analogWrite(ENA, speedCar);
+
+  digitalWrite(IN_3, LOW);
+  digitalWrite(IN_4, HIGH);
+  analogWrite(ENB, speedCar);
+}
+
+void goLeft() {
+  digitalWrite(IN_1, LOW);
+  digitalWrite(IN_2, HIGH);
+  analogWrite(ENA, speedCar);
+
+  digitalWrite(IN_3, HIGH);
+  digitalWrite(IN_4, LOW);
+  analogWrite(ENB, speedCar);
+}
+
+void stopRobot() {
+  digitalWrite(IN_1, LOW);
+  digitalWrite(IN_2, LOW);
+  analogWrite(ENA, speedCar);
+
+  digitalWrite(IN_3, LOW);
+  digitalWrite(IN_4, LOW);
+  analogWrite(ENB, speedCar);
+}
+
+void handleRoot() {
+  String webpage = "<!DOCTYPE html><html><body>";
+  webpage += "<h1>Robot Control</h1>";
+  webpage += "<form action=\"/control\">";
+  webpage += "<button name=\"cmd\" value=\"F\">Forward</button><br>";
+  webpage += "<button name=\"cmd\" value=\"B\">Backward</button><br>";
+  webpage += "<button name=\"cmd\" value=\"L\">Left</button><br>";
+  webpage += "<button name=\"cmd\" value=\"R\">Right</button><br>";
+  webpage += "<button name=\"cmd\" value=\"S\">Stop</button><br>";
+  webpage += "</form></body></html>";
+
+  server.send(200, "text/html", webpage);
+}
+
+void handleControl() {
+  if (server.args() == 0) {
+    server.send(500, "text/plain", "BAD ARGS");
+    return;
+  }
+
+  String cmd = server.arg("cmd");
+  Serial.println("Command: " + cmd);
+
+  if (cmd == "F") {
+    goAhead();
+  } else if (cmd == "B") {
+    goBack();
+  } else if (cmd == "L") {
+    goLeft();
+  } else if (cmd == "R") {
+    goRight();
+  } else if (cmd == "S") {
+    stopRobot();
+  }
+
+  server.send(200, "text/plain", "OK");
+}
 
